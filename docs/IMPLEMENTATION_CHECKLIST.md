@@ -6,10 +6,10 @@ Status key: **Done** = source implementation exists; **Partial** = code exists w
 
 ## Current project state
 
-- [x] **Done** — Express API and Prisma/PostgreSQL data model foundation.
+- [x] **Done** — Express API and Prisma/PostgreSQL data model foundation, mounted through a Next.js Node.js Route Handler for single-project deployment.
 - [x] **Done** — Server-side encrypted secret storage foundation, organization/project scoping, opaque sessions, CSRF checks, and chained audit events.
 - [x] **Done** — React workspace console has auth/setup flows and API-backed starter views for dashboard, secrets, projects/invitations, access requests, user roles, and audit logs.
-- [x] **Done** — Main website now uses React with the Next.js App Router; public landing route, `/app` workspace route, and API proxy rewrites are in place.
+- [x] **Done** — The repository root is one Next.js App Router application: public landing route, `/app` workspace routes, and in-process `/api/v1/*` and `/health` handlers share one deployment.
 - [x] **Done** — Project creation and one-time invitation issuance now use in-app forms; invite tokens are shown once and can be copied by an authorized administrator.
 - [x] **Done** — Project members can submit a reasoned reveal-access request through an in-app form.
 - [x] **Done** — Administrators and Security Managers can view project members, change project roles, and remove membership; changes are audited by the API.
@@ -20,7 +20,7 @@ Status key: **Done** = source implementation exists; **Partial** = code exists w
 - [x] **Done** — Dashboard audit integrity control now runs the protected API verification and reports the returned result; audit navigation is limited to authorized roles.
 - [x] **Done** — User-role controls now reflect API permissions: Security Managers can assign only Developer/Viewer, while disable/enable is Administrator-only and self-actions are disabled.
 - [x] **Done** — This checklist records current scope and implementation gaps.
-- [x] **Done** — Dependencies are installed; the local Next.js, API, and PostgreSQL stack is running. API build checks and authenticated browser smoke checks pass. A production Next.js build remains a release check because the running development server shares the default `.next` output directory.
+- [ ] **Partial** — The app now starts one Next.js server with API routes in-process. Verify the root production build and API flow after the consolidated install; account creation requires the documented database and key variables.
 
 ## Static or illustrative today
 
@@ -29,12 +29,13 @@ Status key: **Done** = source implementation exists; **Partial** = code exists w
 - [ ] **Partial** — The Aegis guide is a local, rule-based help assistant that navigates to workspace sections; it does not use a hosted AI model or transmit chat messages.
 - [ ] **Partial** — Workspace counts, sign-in activity, secrets, project lists, approvals, and audit rows load from PostgreSQL. Dashboard metrics count up when visible, and the 30-day sign-in graph plots persisted daily success/failure totals. Remaining operational pages are still being wired to persisted workflows.
 - [ ] **Partial** — Rotation & Expiry reads saved dates; provider-run rotation is unconfigured. Policies now enforce production and expiry rules for secret creation/expiry edits; incidents have audited response stages; monitoring uses persisted sign-in/audit data; audit CSV export and account/organization context are available. Dual-control emergency access, provider integrations, alert delivery, MFA, editable profile settings, and certified compliance reporting remain incomplete.
-- [ ] **Todo** — No production KMS/HSM integration, hosted AI provider, mail/alert provider, credential rotation provider, external immutable audit checkpoint store, or deployment stack is configured.
+- [x] **Done** — A single-root Vercel deployment configuration and environment/migration guide are present.
+- [ ] **Todo** — No production KMS/HSM integration, hosted AI provider, mail/alert provider, credential rotation provider, external immutable audit checkpoint store, or Vercel project/environment values are configured.
 
 ## Website and experience
 
 - [x] **Done** — Set the visual direction from the provided design brief: quiet dark neutrals, restrained blue/purple/gold, editorial section rhythm, compact technical product UI, and responsive layouts.
-- [x] **Done** — Add the public Next.js App Router landing-page route and the `/app` React workspace route.
+- [x] **Done** — Add the public Next.js App Router landing-page route and the `/app` React workspace route in the same root app.
 - [x] **Done** — Add responsive layout styling, keyboard focus basics, mobile layout adaptations, and `prefers-reduced-motion` handling.
 - [x] **Done** — Refine the public landing page and authenticated workspace with a shared premium visual system, more readable product-preview typography, stronger workspace surfaces, and a collapsible mobile sidebar.
 - [x] **Done** — Browser-checked the compact workspace layout, mobile menu, and dashboard at a narrow viewport; additional viewport QA remains before release.
@@ -76,5 +77,6 @@ Status key: **Done** = source implementation exists; **Partial** = code exists w
 
 ## Work log
 
+- 2026-10-23 — Consolidated the landing page, workspace, and API under one root Next.js application for Vercel; added an in-process Node.js API route adapter, root deployment configuration, production key handling, and environment/migration guidance. The logo and signup redirects remain within the same app.
 - 2026-10-23 — Added shareable workspace routes for sidebar sections; replaced the static authentication panel with a PostgreSQL-backed 30-day sign-in graph; added visible count-up metrics and a first-project action for empty workspaces; unified legacy workspace submit buttons with the cyan/mint gradient; added focus entry, keyboard trapping, Escape dismissal, and focus restoration to the description dialog; added audited incidents, server-enforced organization policies, live monitoring, audit CSV export, and account/organization settings context; and verified dashboard, audit, policy, incident, monitoring, report, and settings routes in the running browser.
 - 2026-10-22 — Added the premium landing page in Next.js App Router; established `/app` as the React workspace route; added in-app project, invitation, access-request, secret-edit, version-history, and API-backed expiry-tracking flows; added dashboard audit verification feedback; aligned user-role controls with API authorization; added scoped project member listing, role changes, audited removal with grant revocation, pending invitation review/revocation, and timed reveal clearing; polished the landing page/workspace styling and mobile navigation; and recorded known static areas and remaining implementation work.

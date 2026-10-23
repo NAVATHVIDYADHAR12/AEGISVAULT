@@ -1,3 +1,4 @@
+import './load-env.js';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -25,20 +26,38 @@ Layer.prototype.handle_request = function handleRequest(req, res, next) {
   }
 };
 
-const auditKey = Buffer.from(process.env.AUDIT_HMAC_KEY || '', 'base64');
-if (auditKey.length !== 32) throw new Error('Set AUDIT_HMAC_KEY to a base64-encoded 32-byte random value.');
-if (process.env.NODE_ENV === 'production') throw new Error('Production startup is blocked until an external KMS/HSM provider is configured.');
-if (Buffer.from(process.env.DEV_KEK_BASE64 || '', 'base64').length !== 32) throw new Error('Set DEV_KEK_BASE64 to a base64-encoded 32-byte development-only value.');
+function configurationError() {
+  const auditKey = Buffer.from(process.env.AUDIT_HMAC_KEY || '', 'base64');
+  const kekValue = process.env.NODE_ENV === 'production' ? process.env.VAULT_KEK_BASE64 : process.env.DEV_KEK_BASE64;
+  const kek = Buffer.from(kekValue || '', 'base64');
+  if (!process.env.DATABASE_URL) return 'DATABASE_URL is not configured.';
+  if (auditKey.length !== 32) return 'AUDIT_HMAC_KEY must encode exactly 32 random bytes.';
+  if (kek.length !== 32) return process.env.NODE_ENV === 'production'
+    ? 'VAULT_KEK_BASE64 must encode exactly 32 random bytes.'
+    : 'DEV_KEK_BASE64 must encode exactly 32 random bytes.';
+  return null;
+}
 
 const app = express();
 app.disable('x-powered-by');
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'same-site' } }));
-app.use(cors({ origin(origin, callback) { if (!origin || isAllowedOrigin(origin)) return callback(null, true); return callback(new Error('Origin is not allowed by CORS.')); }, credentials: true }));
+app.use((req, res, next) => cors({
+  origin(origin, callback) {
+    if (!origin || isAllowedOrigin(origin, req)) return callback(null, true);
+    return callback(new Error('Origin is not allowed by CORS.'));
+  },
+  credentials: true,
+})(req, res, next));
 app.use(express.json({ limit: '128kb' }));
 app.use(cookieParser());
 app.get('/health', async (_req, res) => { await prisma.$queryRaw`SELECT 1`; res.json({ status: 'ok' }); });
 const api = express.Router();
 api.use(rateLimit({ windowMs: 15 * 60_000, limit: 300, standardHeaders: true, legacyHeaders: false }));
+api.use((_req, res, next) => {
+  const issue = configurationError();
+  if (issue) return res.status(503).json({ error: { code: 'VAULT_NOT_CONFIGURED', message: `Vault services are not configured: ${issue}` } });
+  next();
+});
 api.use('/auth', rateLimit({ windowMs: 15 * 60_000, limit: 30, standardHeaders: true, legacyHeaders: false }), authRouter);
 api.use('/dashboard', dashboardRouter);
 api.use('/projects', projectRouter);
@@ -56,5 +75,4 @@ app.use((err, req, res, _next) => {
   console.error('request_failed', { path: req.path, method: req.method, name: err?.name, code: err?.code ?? null });
   res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'The request could not be completed.' } });
 });
-const port = Number(process.env.PORT || 4000);
-app.listen(port, () => console.log(`Centralized Secret Vault API listening on ${port}`));
+export default app;

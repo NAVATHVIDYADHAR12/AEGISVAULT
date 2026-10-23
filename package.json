@@ -3,22 +3,41 @@
   "version": "0.1.0",
   "private": true,
   "description": "Centralized Secret Vault — secure, auditable secret management",
-  "workspaces": [
-    "apps/web",
-    "apps/api"
-  ],
   "scripts": {
-    "dev": "npm run db:local:start && concurrently -k -n api,web -c blue,magenta \"npm:dev:api\" \"npm:dev:web\"",
+    "dev": "npm run db:local:start && next dev",
+    "dev:web": "next dev",
+    "dev:api": "node --watch-path=apps/api/src apps/api/src/index.js",
+    "start": "next start",
+    "build": "npm run db:generate && next build --webpack",
     "db:local:start": "node scripts/start-local-postgres.mjs",
-    "dev:api": "npm --workspace apps/api run dev",
-    "dev:web": "npm --workspace apps/web run dev",
-    "build": "npm --workspace apps/web run build && npm --workspace apps/api run build",
-    "db:generate": "npm --workspace apps/api run db:generate",
-    "db:migrate": "npm --workspace apps/api run db:migrate",
-    "db:seed": "npm --workspace apps/api run db:seed"
+    "db:generate": "prisma generate --schema apps/api/prisma/schema.prisma",
+    "db:migrate": "prisma migrate deploy --schema apps/api/prisma/schema.prisma",
+    "db:migrate:dev": "prisma migrate dev --schema apps/api/prisma/schema.prisma",
+    "db:seed": "node apps/api/prisma/seed.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.4.1",
+    "@tailwindcss/postcss": "^4.0.12",
+    "argon2": "^0.41.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "framer-motion": "^12.4.7",
+    "helmet": "^8.0.0",
+    "lucide-react": "^0.468.0",
+    "next": "^16.0.0",
+    "otplib": "^12.0.1",
+    "postcss": "^8.5.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "serverless-http": "^3.2.0",
+    "tailwindcss": "^4.0.12",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "prisma": "^6.4.1"
   },
   "engines": {
     "node": ">=20.9.0"

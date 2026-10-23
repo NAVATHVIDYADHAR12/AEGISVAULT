@@ -1,10 +1,10 @@
 # Security notes and deployment boundary
 
-This repository intentionally ships without production credentials. Generate distinct random audit-HMAC and development encryption values. Never commit `.env`.
+This repository intentionally ships without production credentials. Generate distinct random values for audit-HMAC and vault encryption. Never commit `.env` or copy production keys into source control.
 
 ## Cryptographic model
 
-Secret versions use AES-256-GCM with a fresh 96-bit nonce and authenticated metadata. A random data-encryption key (DEK) encrypts each value; the DEK is wrapped through a key-encryption-key (KEK) provider adapter. The included development adapter reads a base64 KEK from the environment and is refused outside development. Production requires a cloud KMS/HSM adapter, TLS, restricted key access, tested restore procedures, and key rotation runbooks.
+Secret versions use AES-256-GCM with a fresh 96-bit nonce and authenticated metadata. A random data-encryption key (DEK) encrypts each value; the DEK is wrapped with a key-encryption-key (KEK). Local development uses `DEV_KEK_BASE64`. The single-project Vercel deployment can use `VAULT_KEK_BASE64`, stored as a server-only encrypted environment variable, while `AUDIT_HMAC_KEY` remains independent. This environment-backed adapter is a deployment option, not an HSM or external KMS. A cloud KMS/HSM adapter, key versioning and re-wrapping, tested restore procedures, TLS, and key-rotation runbooks remain required before regulated or high-assurance production use.
 
 ## Authentication
 
@@ -16,5 +16,5 @@ Events are chained with HMAC-SHA-256 using an independent audit key. Verificatio
 
 ## Before production
 
-Complete external KMS integration, email/reset delivery, MFA enrollment UX, API/CLI key issuance and revocation, provider-specific credential rotation, anomaly detection tuning, backup/restore drills, independent security review, and the test suite. Enforce TLS at the edge, least privilege for database/KMS identities, retention policy, monitoring, and incident response ownership. Do not expose production secrets to client analytics or logs.
+Complete external KMS integration and key rotation, email/reset delivery, MFA enrollment UX, API/CLI key issuance and revocation, provider-specific credential rotation, anomaly detection tuning, backup/restore drills, independent security review, and the test suite. Enforce TLS at the edge, least privilege for database/key identities, retention policy, monitoring, and incident response ownership. Do not expose production secrets to client analytics or logs. Protect and back up `VAULT_KEK_BASE64` securely; losing it makes wrapped secret keys unrecoverable.
 
