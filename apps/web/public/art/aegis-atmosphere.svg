@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1000" fill="none">
+  <defs>
+    <radialGradient id="emerald" cx="0" cy="0" r="1" gradientTransform="matrix(420 0 0 310 1320 360)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#86DDA9" stop-opacity=".52"/><stop offset="1" stop-color="#86DDA9" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="honey" cx="0" cy="0" r="1" gradientTransform="matrix(360 0 0 280 930 790)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EAC879" stop-opacity=".28"/><stop offset="1" stop-color="#EAC879" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="ice" cx="0" cy="0" r="1" gradientTransform="matrix(350 0 0 250 470 280)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8FC6AE" stop-opacity=".19"/><stop offset="1" stop-color="#8FC6AE" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="gaussian" x="-40%" y="-40%" width="180%" height="180%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="74"/>
+    </filter>
+    <linearGradient id="glass" x1="1070" x2="1600" y1="142" y2="824" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D9F4E4" stop-opacity=".12"/><stop offset="1" stop-color="#B1D9BE" stop-opacity=".015"/>
+    </linearGradient>
+    <linearGradient id="line" x1="840" x2="1550" y1="260" y2="710" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#BCE8CA" stop-opacity=".28"/><stop offset="1" stop-color="#E4CA8F" stop-opacity=".05"/>
+    </linearGradient>
+  </defs>
+  <g filter="url(#gaussian)">
+    <ellipse cx="1320" cy="360" fill="url(#emerald)" rx="420" ry="310"/>
+    <ellipse cx="930" cy="790" fill="url(#honey)" rx="360" ry="280"/>
+    <ellipse cx="470" cy="280" fill="url(#ice)" rx="350" ry="250"/>
+  </g>
+  <g opacity=".62">
+    <path d="M760 193h540a48 48 0 0 1 48 48v358a48 48 0 0 1-48 48H760a48 48 0 0 1-48-48V241a48 48 0 0 1 48-48Z" fill="url(#glass)" stroke="url(#line)"/>
+    <path d="M820 296h356M820 343h468M820 390h276M820 487h414M820 534h332" stroke="url(#line)" stroke-linecap="round" stroke-width="2"/>
+    <circle cx="1230" cy="295" r="48" stroke="#C4E8CD" stroke-opacity=".17"/>
+    <circle cx="1230" cy="295" r="29" stroke="#E5D19C" stroke-opacity=".28"/>
+    <path d="M681 394c95 0 101-126 196-126m419 214c89 0 71 128 170 128" stroke="url(#line)" stroke-width="1.5"/>
+    <circle cx="877" cy="268" r="4" fill="#C5E8CB"/>
+    <circle cx="1466" cy="610" r="4" fill="#EAD28F"/>
+    <path d="M1190 700c-64 79-167 130-284 130-88 0-169-29-232-79" stroke="#B4DCC1" stroke-opacity=".13" stroke-width="1.5"/>
+  </g>
+</svg>

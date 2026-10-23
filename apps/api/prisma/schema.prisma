@@ -1,0 +1,383 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMINISTRATOR
+  SECURITY_MANAGER
+  DEVELOPER
+  VIEWER
+}
+
+enum Environment {
+  DEVELOPMENT
+  TESTING
+  STAGING
+  PRODUCTION
+}
+
+enum SecretType {
+  API_KEY
+  ACCESS_TOKEN
+  DATABASE_CREDENTIAL
+  PASSWORD
+  SSH_KEY
+  CLOUD_CREDENTIAL
+  ENVIRONMENT_VARIABLE
+  OTHER
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum IncidentStatus {
+  OPEN
+  INVESTIGATING
+  CONTAINED
+  RESOLVED
+}
+
+model Organization {
+  id              String            @id @default(cuid())
+  name            String
+  createdAt       DateTime          @default(now())
+  users           User[]
+  projects        Project[]
+  teams           Team[]
+  secrets         Secret[]
+  policies        Policy[]
+  invitations     Invitation[]
+  loginEvents     LoginEvent[]
+  accessRequests  AccessRequest[]
+  auditEvents     AuditEvent[]
+  auditCheckpoints AuditCheckpoint[]
+  notifications   Notification[]
+  emergencyGrants EmergencyGrant[]
+  incidents       Incident[]
+}
+
+model User {
+  id                     String             @id @default(cuid())
+  organizationId         String
+  organization           Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email                  String             @unique
+  passwordHash           String
+  role                   Role               @default(VIEWER)
+  mfaSecret              String?
+  mfaEnabled             Boolean            @default(false)
+  disabledAt             DateTime?
+  createdAt              DateTime           @default(now())
+  sessions               Session[]
+  ownedSecrets           Secret[]           @relation("SecretOwner")
+  createdSecretVersions  SecretVersion[]    @relation("SecretVersionCreator")
+  memberships            ProjectMember[]
+  teamMemberships        TeamMember[]
+  loginEvents            LoginEvent[]       @relation("LoginUser")
+  createdInvitations     Invitation[]       @relation("InvitationCreator")
+  accessRequests         AccessRequest[]    @relation("AccessRequester")
+  approvals              Approval[]         @relation("ApprovalUser")
+  accessGrants           AccessGrant[]
+  notifications          Notification[]
+  emergencyGrants        EmergencyGrant[]   @relation("EmergencyUser")
+  approvedEmergency     EmergencyGrant[]   @relation("EmergencyApprover")
+  openedIncidents        Incident[]         @relation("IncidentOpener")
+  incidentActivities     IncidentActivity[] @relation("IncidentActor")
+  @@index([organizationId, role])
+}
+
+model Session {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  @@index([userId, expiresAt])
+}
+
+model LoginEvent {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String?
+  user           User?        @relation("LoginUser", fields: [userId], references: [id], onDelete: SetNull)
+  email          String
+  success        Boolean
+  createdAt      DateTime     @default(now())
+  @@index([organizationId, createdAt])
+  @@index([email, createdAt])
+}
+
+model Project {
+  id             String          @id @default(cuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  createdAt      DateTime        @default(now())
+  members        ProjectMember[]
+  secrets        Secret[]
+  invitations    Invitation[]
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model Team {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  members        TeamMember[]
+  @@unique([organizationId, name])
+}
+
+model TeamMember {
+  teamId String
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @default(DEVELOPER)
+  @@id([teamId, userId])
+  @@index([userId])
+}
+
+model ProjectMember {
+  projectId String
+  userId    String
+  role      Role    @default(VIEWER)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@id([projectId, userId])
+  @@index([userId])
+}
+
+model Invitation {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  email          String
+  role           Role
+  tokenHash      String       @unique
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  createdById    String
+  createdBy      User         @relation("InvitationCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  @@index([organizationId, email, expiresAt])
+}
+
+model Secret {
+  id             String          @id @default(cuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projectId      String
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  ownerId        String
+  owner          User            @relation("SecretOwner", fields: [ownerId], references: [id])
+  name           String
+  description    String?
+  type           SecretType
+  environment    Environment
+  tags           String[]        @default([])
+  expiresAt      DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  lastAccessedAt DateTime?
+  versions       SecretVersion[]
+  grants         AccessGrant[]
+  accessRequests AccessRequest[]
+  rotationSchedules RotationSchedule[]
+  @@index([organizationId, projectId, environment])
+  @@index([organizationId, expiresAt])
+}
+
+model SecretVersion {
+  id          String   @id @default(cuid())
+  secretId    String
+  secret      Secret   @relation(fields: [secretId], references: [id], onDelete: Cascade)
+  version     Int
+  ciphertext  Bytes
+  nonce       Bytes
+  authTag     Bytes
+  wrappedDek  Bytes
+  kekVersion  String
+  createdById String
+  createdBy   User     @relation("SecretVersionCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  @@unique([secretId, version])
+  @@index([secretId, createdAt])
+}
+
+model AccessGrant {
+  id        String   @id @default(cuid())
+  secretId  String
+  secret    Secret   @relation(fields: [secretId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  canReveal Boolean  @default(false)
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  @@unique([secretId, userId])
+}
+
+model AccessRequest {
+  id             String        @id @default(cuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  secretId       String
+  secret         Secret        @relation(fields: [secretId], references: [id], onDelete: Cascade)
+  requesterId    String
+  requester      User          @relation("AccessRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  reason         String
+  status         RequestStatus @default(PENDING)
+  expiresAt      DateTime?
+  createdAt      DateTime      @default(now())
+  approvals      Approval[]
+  @@index([organizationId, status, createdAt])
+}
+
+model Approval {
+  id         String        @id @default(cuid())
+  requestId  String
+  request    AccessRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  approverId String
+  approver   User          @relation("ApprovalUser", fields: [approverId], references: [id], onDelete: Cascade)
+  decision   String
+  note       String?
+  createdAt  DateTime      @default(now())
+  @@index([requestId, createdAt])
+}
+
+model Policy {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  rules          Json
+  enabled        Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  @@index([organizationId, enabled])
+}
+
+model RotationSchedule {
+  id          String             @id @default(cuid())
+  secretId    String
+  secret      Secret             @relation(fields: [secretId], references: [id], onDelete: Cascade)
+  intervalDays Int
+  nextDueAt   DateTime
+  enabled     Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  executions  RotationExecution[]
+  @@index([enabled, nextDueAt])
+}
+
+model RotationExecution {
+  id         String           @id @default(cuid())
+  scheduleId String
+  schedule   RotationSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  status     String
+  provider   String?
+  detail     String?
+  executedAt DateTime         @default(now())
+}
+
+model AuditEvent {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actorId        String?
+  action         String
+  resourceType   String
+  resourceId     String?
+  metadata       Json?
+  previousHash   String?
+  eventHash      String
+  sequence       Int
+  createdAt      DateTime     @default(now())
+  checkpoints    AuditCheckpoint[]
+  @@unique([organizationId, sequence])
+  @@index([organizationId, createdAt])
+}
+
+model AuditCheckpoint {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  eventId        String
+  event          AuditEvent   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventHash      String
+  signature      String?
+  externalReference String?
+  createdAt      DateTime     @default(now())
+}
+
+model Notification {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String?
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  category       String
+  title          String
+  body           String
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+  @@index([organizationId, createdAt])
+}
+
+model EmergencyGrant {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation("EmergencyUser", fields: [userId], references: [id], onDelete: Cascade)
+  justification  String
+  approvedById   String?
+  approvedBy     User?        @relation("EmergencyApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  startsAt       DateTime
+  expiresAt      DateTime
+  revokedAt      DateTime?
+  createdAt      DateTime     @default(now())
+  @@index([organizationId, expiresAt])
+}
+
+model Incident {
+  id             String             @id @default(cuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title          String
+  status         IncidentStatus     @default(OPEN)
+  severity       String
+  openedById     String
+  openedBy       User               @relation("IncidentOpener", fields: [openedById], references: [id], onDelete: Restrict)
+  createdAt      DateTime           @default(now())
+  activities     IncidentActivity[]
+  @@index([organizationId, status, createdAt])
+}
+
+model IncidentActivity {
+  id         String   @id @default(cuid())
+  incidentId String
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  actorId    String
+  actor      User     @relation("IncidentActor", fields: [actorId], references: [id], onDelete: Restrict)
+  action     String
+  notes      String?
+  createdAt  DateTime @default(now())
+  @@index([incidentId, createdAt])
+}
+
