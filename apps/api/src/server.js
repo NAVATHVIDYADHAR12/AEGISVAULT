@@ -39,6 +39,9 @@ function configurationError() {
 }
 
 const app = express();
+// Vercel sanitizes and forwards the client IP in X-Forwarded-For. Trust only
+// that single platform proxy so the rate limiter keys requests per client.
+if (process.env.VERCEL === '1') app.set('trust proxy', 1);
 app.disable('x-powered-by');
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'same-site' } }));
 app.use((req, res, next) => cors({

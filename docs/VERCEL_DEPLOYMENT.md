@@ -4,14 +4,14 @@ The repository root is the only deployable application. It contains the Next.js 
 
 ## Vercel project settings
 
-Import `NAVATHVIDYADHAR12/THE-2026-OCT-PROJECT` and use these settings:
+Import `NAVATHVIDYADHAR12/AEGISVAULT` and use these settings:
 
 - **Root Directory:** repository root (`./`)
 - **Framework Preset:** Next.js
 - **Install Command:** `npm ci`
 - **Build Command:** `npm run build`
 - **Output Directory:** leave the Next.js default
-- **Node.js:** 20.9 or newer
+- **Node.js:** 22.x (pinned by `package.json` to keep the Vercel build and Function runtime consistent)
 
 These values are also recorded in the root `vercel.json`. Do not create separate Vercel projects for `apps/api` or `apps/web`; the application source now builds from the repository root.
 
